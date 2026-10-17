@@ -82,6 +82,29 @@ The data processing service runs background jobs when started in `serve` mode.
 - The scheduler now includes a daily contributor reputation snapshot job that builds top-N contributor snapshots for each project and persists them for leaderboard / reputation queries.
 - Control the snapshot size with `REPUTATION_SNAPSHOT_TOP_N` in `.env` (default: `100`).
 
+### Historical Feature Backfills
+
+After applying database migrations, compute a registered feature over a
+historical range with resumable, per-chunk commits:
+
+```powershell
+python scripts/backfill_feature.py --asset XLM --feature volume `
+  --start 2025-01-01T00:00:00Z --end 2025-02-01T00:00:00Z --chunk-days 7
+```
+
+The same arguments resume an interrupted run. Backfilled values are stored in
+`feature_backfill_values`; chunk checkpoints are stored in
+`feature_backfill_checkpoints`. A dry run estimates source rows and memory
+without writing values:
+
+```powershell
+python scripts/backfill_feature.py --asset XLM --feature volume `
+  --start 2025-01-01T00:00:00Z --end 2025-02-01T00:00:00Z --dry-run
+```
+
+Run progress, throughput, outcome, and errors are recorded in the pipeline run
+registry under a `feature_backfill:<run-id>` entry.
+
 ## API Documentation & Contracts
 
 The FastAPI server exposes an OpenAPI document (Swagger UI) at `/docs` when running.
