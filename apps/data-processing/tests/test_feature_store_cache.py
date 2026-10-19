@@ -76,12 +76,12 @@ def test_warm_serving_cache_matches_uncached_training_features():
     pd.testing.assert_frame_equal(
         training_features,
         warm_serving_features,
-        check_attrs=True,
+        assert cached_df.attrs == uncached_df.attrs
     )
     pd.testing.assert_frame_equal(
         cold_serving_features,
         warm_serving_features,
-        check_attrs=True,
+        assert cached_df.attrs == uncached_df.attrs
     )
     assert read_sql.call_count == sql_calls_after_cold
     assert all(cache.hits == 1 for cache in caches.values())
