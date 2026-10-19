@@ -16,6 +16,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useEnvironment } from '../../contexts/EnvironmentContext';
 import { useLocalization } from '../../src/context';
 import { config, AppEnvironment } from '../../lib/config';
+import { isCatalogueEnabled } from '../../lib/component-catalogue';
 import {
   authenticateBiometricPrompt,
   getBiometricLockEnabled,
@@ -32,7 +33,7 @@ const THEME_OPTIONS: { label: string; value: 'system' | 'light' | 'dark'; icon: 
 
 export default function SettingsScreen() {
   const { logout, isAuthenticated } = useAuth();
-  const { colors, setThemeMode, resolvedMode } = useLocalization();
+  const { colors, setThemeMode, themeMode } = useLocalization();
   const { t } = useLocalization();
   const { environment, environmentConfig, setEnvironment, isMainnetConfigured } = useEnvironment();
   const router = useRouter();
@@ -222,6 +223,32 @@ export default function SettingsScreen() {
           <TouchableOpacity
             style={styles.navRow}
             activeOpacity={0.75}
+            onPress={() => router.push('/settings/sessions')}
+            accessibilityRole="link"
+            accessibilityLabel={t('settings.sessions.title')}
+            accessibilityHint={t('settings.sessions.description')}
+          >
+            <View style={styles.navRowCopy}>
+              <View style={[styles.navIconShell, { backgroundColor: colors.card }]}>
+                <Ionicons name="phone-portrait-outline" size={18} color={colors.accent} />
+              </View>
+              <View style={styles.navTextWrap}>
+                <Text style={[styles.navTitle, { color: colors.text }]} accessible>
+                  {t('settings.sessions.title')}
+                </Text>
+                <Text style={[styles.navDescription, { color: colors.textSecondary }]} accessible>
+                  {t('settings.sessions.description')}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+          <TouchableOpacity
+            style={styles.navRow}
+            activeOpacity={0.75}
             onPress={() => router.push('/settings/notification-settings')}
             accessibilityRole="link"
             accessibilityLabel={t('settings.notification_settings.title')}
@@ -326,7 +353,7 @@ export default function SettingsScreen() {
                 value={biometricEnabled}
                 onValueChange={handleBiometricToggle}
                 trackColor={{ false: colors.cardBorder, true: colors.accent }}
-                thumbColor="#ffffff"
+                thumbColor={colors.switchThumb}
                 accessibilityLabel={t('settings.biometric_lock.enable')}
                 accessibilityRole="switch"
               />
@@ -374,10 +401,10 @@ export default function SettingsScreen() {
                   <Ionicons
                     name={option === 'testnet' ? 'flask-outline' : 'planet-outline'}
                     size={18}
-                    color={isActive ? '#ffffff' : colors.textSecondary}
+                    color={isActive ? colors.onAccent : colors.textSecondary}
                   />
                   <Text
-                    style={[styles.environmentLabel, { color: isActive ? '#ffffff' : colors.text }]}
+                    style={[styles.environmentLabel, { color: isActive ? colors.onAccent : colors.text }]}
                     accessible
                   >
                     {option === 'testnet'
@@ -428,7 +455,7 @@ export default function SettingsScreen() {
 
           <View style={styles.themeRow}>
             {THEME_OPTIONS.map((opt) => {
-              const isActive = resolvedMode === opt.value;
+              const isActive = themeMode === opt.value;
               return (
                 <TouchableOpacity
                   key={opt.value}
@@ -448,10 +475,10 @@ export default function SettingsScreen() {
                   <Ionicons
                     name={opt.icon as any}
                     size={20}
-                    color={isActive ? '#ffffff' : colors.textSecondary}
+                    color={isActive ? colors.onAccent : colors.textSecondary}
                   />
                   <Text
-                    style={[styles.themeLabel, { color: isActive ? '#ffffff' : colors.text }]}
+                    style={[styles.themeLabel, { color: isActive ? colors.onAccent : colors.text }]}
                     accessible
                   >
                     {opt.label}
@@ -540,6 +567,39 @@ export default function SettingsScreen() {
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
+
+          {isCatalogueEnabled() && (
+            <>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+              <TouchableOpacity
+                style={styles.navRow}
+                activeOpacity={0.75}
+                onPress={() => router.push('/dev/catalogue')}
+                accessibilityRole="link"
+                accessibilityLabel="Component catalogue"
+                accessibilityHint="Shared components in each of their states, development builds only"
+              >
+                <View style={styles.navRowCopy}>
+                  <View style={[styles.navIconShell, { backgroundColor: colors.card }]}>
+                    <Ionicons name="grid-outline" size={18} color={colors.accent} />
+                  </View>
+                  <View style={styles.navTextWrap}>
+                    <Text style={[styles.navTitle, { color: colors.text }]} accessible>
+                      Component catalogue
+                    </Text>
+                    <Text
+                      style={[styles.navDescription, { color: colors.textSecondary }]}
+                      accessible
+                    >
+                      Shared components in each of their states (development builds only)
+                    </Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {isAuthenticated && (
@@ -551,8 +611,8 @@ export default function SettingsScreen() {
             accessibilityLabel={t('settings.logout')}
             accessibilityHint="Sign out of your account"
           >
-            <Ionicons name="log-out-outline" size={20} color="#ffffff" style={{ marginRight: 8 }} />
-            <Text style={styles.logoutButtonText} accessible>
+            <Ionicons name="log-out-outline" size={20} color={colors.onStatus} style={{ marginRight: 8 }} />
+            <Text style={[styles.logoutButtonText, { color: colors.onStatus }]} accessible>
               {t('settings.logout')}
             </Text>
           </TouchableOpacity>
@@ -714,7 +774,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   logoutButtonText: {
-    color: '#ffffff',
     fontSize: 18,
     fontWeight: '600',
   },

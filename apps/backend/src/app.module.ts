@@ -32,6 +32,7 @@ import databaseConfig from './database/database.config';
 import stellarConfig from './stellar/config/stellar.config';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { VersionFallbackMiddleware } from './common/middleware/version-fallback.middleware';
 import { RequestContextModule } from './common/services/request-context.module';
 import { StructuredLoggerService } from './common/services/structured-logger.service';
 import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
@@ -44,6 +45,7 @@ import {
 import { TestController } from './test/test.controller';
 import { UploadModule } from './upload/upload.module';
 import { AuthModule } from './auth/auth.module';
+import { SupportModeModule } from './support-mode/support-mode.module';
 import { UsersModule } from './users/users.module';
 import { GrantsModule } from './grants/grants.module';
 import { HealthModule } from './health/health.module';
@@ -85,6 +87,10 @@ import { ProfilingModule } from './common/profiling/profiling.module';
 import { QueryCountMiddleware } from './common/profiling/query-count.middleware';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { SavedSearchesModule } from './saved-searches/saved-searches.module';
+import { ServiceApiKeysModule } from './service-api-keys/service-api-keys.module';
+import { config } from './lib/config';
+
+const isMainnet = config.stellar.network === 'mainnet';
 
 @Module({
   imports: [
@@ -146,6 +152,7 @@ import { SavedSearchesModule } from './saved-searches/saved-searches.module';
     WebhookModule,
     UploadModule,
     AuthModule,
+    SupportModeModule,
     UsersModule,
     HealthModule,
     SchedulerModule,
@@ -199,8 +206,8 @@ import { SavedSearchesModule } from './saved-searches/saved-searches.module';
     // Bot auth
     BotAuthModule,
 
-    // Demo bootstrap
-    DemoBootstrapModule,
+    // Demo bootstrap (testnet only)
+    ...(!isMainnet ? [DemoBootstrapModule] : []),
 
     // Contributor feed
     ContributorFeedModule,
@@ -234,8 +241,12 @@ import { SavedSearchesModule } from './saved-searches/saved-searches.module';
 
     // Saved searches & subscriptions
     SavedSearchesModule,
+    ServiceApiKeysModule,
   ],
-  controllers: [AppController, TestController, TestExceptionController],
+  controllers: [
+    AppController,
+    ...(!isMainnet ? [TestController, TestExceptionController] : []),
+  ],
   providers: [
     AppService,
     StructuredLoggerService,
@@ -259,8 +270,10 @@ import { SavedSearchesModule } from './saved-searches/saved-searches.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Apply request ID and logging middleware to all routes
-    consumer.apply(RequestIdMiddleware, LoggerMiddleware).forRoutes('*');
+    // Apply version fallback, request ID and logging middleware to all routes
+    consumer
+      .apply(VersionFallbackMiddleware, RequestIdMiddleware, LoggerMiddleware)
+      .forRoutes('*');
 
     // Apply query-count profiling middleware when QUERY_PROFILING=true.
     // Off by default — zero overhead in production.
